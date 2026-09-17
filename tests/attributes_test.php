@@ -122,6 +122,10 @@ class attributes_test extends advanced_testcase
         $user_info_data->data = 'changed_value';
         $DB->update_record('user_info_data', $user_info_data);
 
+        // Simulate the cache purge that the user_updated event handler performs
+        // in production when profile data changes (the test edits rows directly).
+        \cache::make('enrol_attributes', 'dbquerycache')->purge();
+
         // Process enrolments to apply expiration
         enrol_attributes_plugin::process_enrolments();
 
@@ -149,6 +153,10 @@ class attributes_test extends advanced_testcase
         $user_info_data = (object)$user_info_data;
         $user_info_data->data = 'changed_value';
         $DB->update_record('user_info_data', $user_info_data);
+
+        // Simulate the cache purge that the user_updated event handler performs
+        // in production when profile data changes (the test edits rows directly).
+        \cache::make('enrol_attributes', 'dbquerycache')->purge();
 
         // Process enrolments to apply expiration
         enrol_attributes_plugin::process_enrolments();
@@ -184,6 +192,10 @@ class attributes_test extends advanced_testcase
         $user_info_data->data = 'changed_value';
         $DB->update_record('user_info_data', $user_info_data);
 
+        // Simulate the cache purge that the user_updated event handler performs
+        // in production when profile data changes (the test edits rows directly).
+        \cache::make('enrol_attributes', 'dbquerycache')->purge();
+
         // Process enrolments to apply expiration
         enrol_attributes_plugin::process_enrolments();
 
@@ -199,6 +211,9 @@ class attributes_test extends advanced_testcase
     function unenrolUser()
     {
         global $DB;
+        // Simulate the cache purge that the user_updated event handler performs
+        // in production when profile data changes (the test edits rows directly).
+        \cache::make('enrol_attributes', 'dbquerycache')->purge();
         /* Removing user custom attribute */
         $DB->delete_records('user_info_data', ['userid' => $this->user->id, 'fieldid' => $this->field->id]);
         $DB->delete_records('user_info_field', ['id' => $this->field->id]);
