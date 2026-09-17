@@ -555,17 +555,6 @@ class enrol_attributes_plugin extends enrol_plugin {
     }
 
     /**
-     * Is it possible to delete enrol instance via standard UI?
-     *
-     * @param object $instance
-     *
-     * @return bool
-     */
-    public function instance_deleteable($instance) {
-        return true;
-    }
-
-    /**
      * Returns link to page which may be used to add new instance of enrolment plugin in course.
      *
      * @param int $courseid
@@ -592,6 +581,12 @@ class enrol_attributes_plugin extends enrol_plugin {
     /**
      * Restore instance and map settings.
      *
+     * Group ids stored in customtext1 are mapped to their newly restored
+     * counterparts via the restore 'group' mapping (populated by
+     * restore_groups_structure_step, which runs before the enrolments step).
+     * Groups that could not be mapped (e.g. groups were not included in the
+     * backup) are dropped and a debugging notice is emitted.
+     *
      * @param restore_enrolments_structure_step $step
      * @param stdClass                          $data
      * @param stdClass                          $course
@@ -601,6 +596,26 @@ class enrol_attributes_plugin extends enrol_plugin {
         if ($step->get_task()->get_target() !== backup::TARGET_NEW_COURSE) {
             return false;
         }
+
+        if (!empty($data->customtext1)) {
+            $details = json_decode($data->customtext1);
+            if (isset($details->rules)) {
+                // Map the configured group ids to their restored equivalents.
+                $groupids = [];
+                foreach ($details->groups ?? [] as $oldgroupid) {
+                    if ($newgroupid = $step->get_mappingid('group', $oldgroupid)) {
+                        $groupids[] = $newgroupid;
+                    } else {
+                        debugging('enrol_attributes: group id ' . $oldgroupid .
+                                ' for instance ' . $oldid . ' could not be mapped during course restore, dropping group assignment.',
+                                DEBUG_DEVELOPER);
+                    }
+                }
+                $details->groups = $groupids;
+                $data->customtext1 = json_encode($details);
+            }
+        }
+
         $instanceid = $this->add_instance($course, (array)$data);
         $step->set_mapping('enrol', $oldid, $instanceid);
     }

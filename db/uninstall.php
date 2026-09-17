@@ -15,6 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Attributes enrolment plugin uninstallation.
+ *
+ * Removes all remaining enrol attributes instances. The user enrolments
+ * belonging to those instances and the role assignments of the component
+ * are purged by core (see \core\plugininfo\enrol::uninstall_cleanup()),
+ * which runs after this file.
+ *
  * @package    enrol_attributes
  * @author     Nicolas Dunand <Nicolas.Dunand@unil.ch>
  * @copyright  2012-2024 Université de Lausanne {@link http://www.unil.ch}
@@ -23,10 +30,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2026091700;
-$plugin->requires = 2022112800; // Moodle 4.1
-$plugin->supported = [2022112800, 2026042000]; // Moodle 4.1 - 5.2
-$plugin->component = 'enrol_attributes';
-$plugin->release = '2.17 for Moodle 4.1-5.2 (build 2026091700)';
-$plugin->maturity = MATURITY_STABLE;
+function xmldb_enrol_attributes_uninstall() {
+    global $DB;
 
+    // Drop the legacy groups-mapping table if it is still around
+    // (created by upgrade.php in earlier 2.x releases, unused since 2.10).
+    $dbman = $DB->get_manager();
+    $table = new xmldb_table('enrol_attributes_groups');
+    if ($dbman->table_exists($table)) {
+        $dbman->drop_table($table);
+    }
+
+    return true;
+}
