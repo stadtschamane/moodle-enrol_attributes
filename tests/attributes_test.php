@@ -294,6 +294,10 @@ class attributes_test extends advanced_testcase
         $user_info_data->data = 'changed_value';
         $DB->update_record('user_info_data', $user_info_data);
 
+        // Simulate the cache purge that the user_updated event handler performs
+        // in production when profile data changes (the test edits rows directly).
+        \cache::make('enrol_attributes', 'dbquerycache')->purge();
+
         enrol_attributes_plugin::process_enrolments();
 
         $updated = array_filter($sink->get_events(), function($event) {
@@ -336,7 +340,13 @@ class attributes_test extends advanced_testcase
         ];
         $enrol2->id = $DB->insert_record('enrol', $enrol2);
 
-        // Re-enrol the user through the second instance so it is the last enrolment.
+        // Re-insert the profile data: unenrolUser() deleted it, and instance 2's
+        // rule (value 'test') can only match with the data row present.
+        $DB->insert_record('user_info_data', (object)[
+            'userid' => $this->user->id,
+            'fieldid' => $this->field->id,
+            'data' => 'test'
+        ]);
         // Fresh cache handles are used deliberately: the rule sets cached by
         // setUp()/previous steps must be dropped after enrol/customtext1 changes.
         $cache = \cache::make('enrol_attributes', 'dbquerycache');
