@@ -340,11 +340,16 @@ class attributes_test extends advanced_testcase
         ];
         $enrol2->id = $DB->insert_record('enrol', $enrol2);
 
-        // Re-insert the profile data: unenrolUser() deleted it, and instance 2's
-        // rule (value 'test') can only match with the data row present.
+        // Re-create the profile field AND data row: unenrolUser() deleted both,
+        // and instance 2's rule resolves its fieldid freshly from user_info_field.
+        $newfieldid = $DB->insert_record('user_info_field', (object)[
+            'datatype' => 'text',
+            'shortname' => 'testprofilefield',
+            'name' => 'testprofilefield'
+        ]);
         $DB->insert_record('user_info_data', (object)[
             'userid' => $this->user->id,
-            'fieldid' => $this->field->id,
+            'fieldid' => $newfieldid,
             'data' => 'test'
         ]);
         // Fresh cache handles are used deliberately: the rule sets cached by
